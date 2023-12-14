@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import reactor.core.publisher.Hooks;
 
 import java.util.Arrays;
 
@@ -46,6 +47,7 @@ public class ElasticSearchObservableApplication {
     }
 
     public static void main(String[] args) {
+        Hooks.enableAutomaticContextPropagation();
         SpringApplication.run(ElasticSearchObservableApplication.class, args);
     }
 }

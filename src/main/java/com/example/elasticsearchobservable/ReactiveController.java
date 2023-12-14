@@ -33,8 +33,8 @@ public class ReactiveController {
                 .handle((result, sink) -> {
                     logger.info("inside handle");
                     sink.next(result);
-                })
-                .log(logger);
+                });
+//                .log(logger);
 //                .contextCapture();
         logger.info("After elastic search call");
         return name;
