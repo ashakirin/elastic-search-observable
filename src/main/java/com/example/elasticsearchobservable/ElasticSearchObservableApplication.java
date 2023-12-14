@@ -29,21 +29,16 @@ public class ElasticSearchObservableApplication {
     @PostConstruct
     public void insertDataSample() {
 
-        operations.indexOps(Article.class).refresh();
-
-        var documents = Arrays.asList(
-                Article.builder().name("Article 1").author("Author 1").content("Test").build(), //
-                Article.builder().name("Article 2").author("Author 21").content("Test").build());
-
-        operations.save(documents);
-        operations.indexOps(Article.class).refresh();
+//        operations.indexOps(Article.class).refresh();
+//
+//        var documents = Arrays.asList(
+//                Article.builder().name("Article 1").author("Author 1").content("Test").build(), //
+//                Article.builder().name("Article 2").author("Author 21").content("Test").build());
+//
+//        operations.save(documents);
+//        operations.indexOps(Article.class).refresh();
 
 //        Hooks.enableAutomaticContextPropagation();
-//        ContextRegistry.getInstance()
-//                .registerThreadLocalAccessor("CORRELATION_ID",
-//                        CORRELATION_ID::get,
-//                        CORRELATION_ID::set,
-//                        CORRELATION_ID::remove);
     }
 
     public static void main(String[] args) {
