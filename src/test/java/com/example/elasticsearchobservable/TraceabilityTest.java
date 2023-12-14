@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,11 +26,9 @@ import java.time.Duration;
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@ExtendWith(OutputCaptureExtension.class)
 @AutoConfigureObservability
 public class TraceabilityTest {
     private static final Logger logger = LoggerFactory.getLogger(ReactiveController.class);
@@ -45,53 +44,46 @@ public class TraceabilityTest {
     }
 
     @Test
-    public void checkTracingInLogStandalone(CapturedOutput capturedOutput) {
+    public void checkTracingInLogStandalone() {
         // Create an Observation and observe your code
         Observation.createNotStarted("user.name", observationRegistry)
                 .contextualName("getting-user-name")
                 .observe(() -> {
                     logger.info("Hello");
+                    assertNotNull(MDC.get("traceId"));
+                    assertNotNull(MDC.get("spanId"));
                 });
-
-        checkOutput(capturedOutput, "Hello");
     }
 
 
     @Test
-    public void checkTracingInLogStandardFlux(CapturedOutput capturedOutput) {
+    public void checkTracingInLogStandardFlux() {
         // Create an Observation and observe your code
         Observation.createNotStarted("user.name", observationRegistry)
                 .contextualName("getting-user-name")
                 .observe(() -> {
                     fluxIteration();
                 });
-        checkOutput(capturedOutput, "inside flux handle");
     }
 
     @Test
-    public void checkTracingInLogElasticSearchCall(CapturedOutput capturedOutput) {
+    public void checkTracingInLogElasticSearchCall() {
         // Create an Observation and observe your code
         Observation.createNotStarted("user.name", observationRegistry)
                 .contextualName("getting-user-name")
                 .observe(() -> {
                     elasticSearchRepoCall();
                 });
-        checkOutput(capturedOutput, "inside elastic search handle");
-        checkOutput(capturedOutput, "inside elastic search doOnComplete");
     }
 
-    private static void checkOutput(CapturedOutput capturedOutput, String match) {
-        String[] lines = capturedOutput.getOut().split("\\n");
-        boolean result = Arrays.stream(lines)
-                .filter(s -> s.contains(match))
-                .allMatch(s -> !s.contains("[server,,]"));
-        assertTrue(result);
-    }
-
-    private static void fluxIteration() {
+    private  void fluxIteration() {
         Flux.just(1, 2, 3)
                 .delayElements(Duration.ofMillis(1))
-                        .handle((result, sink) -> logger.info("inside flux handle"))
+                        .handle((result, sink) -> {
+                            logger.info("inside flux handle");
+                            assertNotNull(MDC.get("traceId"));
+                            assertNotNull(MDC.get("spanId"));
+                        })
 //                .contextCapture()
                 .blockLast();
     }
@@ -99,16 +91,23 @@ public class TraceabilityTest {
     private void elasticSearchRepoCall() {
         repository.findByName("Article 1")
                 .map(Article::getName)
+                .doOnNext(el -> {
+                    logger.info("inside elastic search doOnNext");
+                    assertNotNull(MDC.get("traceId"));
+                    assertNotNull(MDC.get("spanId"));
+                })
                 .tap(() -> new DefaultSignalListener<>() {
                     @Override
                     public void doOnComplete() {
                         logger.info("inside elastic search doOnComplete");
-//                        assertThat(output.getOut()).contains("my trace id");
+                        assertNotNull(MDC.get("traceId"));
+                        assertNotNull(MDC.get("spanId"));
                     }
                 })
                 .handle((result, sink) -> {
                     logger.info("inside elastic search handle");
-                    //                  assertThat(output.getOut()).contains("my trace id");
+                    assertNotNull(MDC.get("traceId"));
+                    assertNotNull(MDC.get("spanId"));
                     sink.next(result);
                 })
 //                .contextCapture()
